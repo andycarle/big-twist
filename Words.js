@@ -4,7 +4,7 @@ import config from "mc/config";
 
 const HOST = config.API_HOST;
 const PATH = "/words/";
-const FREQ_MIN = 6.5;
+const FREQ_MIN = 5;
 
 const ANAGRAM_HOST = "scrabble.now.sh";
 const ANAGRAM_PATH = "/api";
@@ -118,7 +118,7 @@ class WordsRound {
 		let path = PATH;
 		path += WordsRound.queryStringFromObject({
 			letters: length,
-			frequencymin: this.frequency,
+			frequencyMin: this.frequency,
 			random: "true"
 		})
 
@@ -132,6 +132,19 @@ class WordsRound {
 				callback(obj.word);
 			}
 		}
+	}
+
+	static traceInfo(word){
+		let path = PATH;
+		path += word;
+		let request = new Request({
+			host: HOST, response: String, port: 443, Socket: SecureSocket, headers, path
+		});
+		request.callback = (message, value, etc) => {
+			if (message === 5) {
+				trace(`${value}\n`);
+			}
+		}	
 	}
 
 	static queryStringFromObject(dictionary){
