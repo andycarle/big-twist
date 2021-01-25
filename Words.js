@@ -25,10 +25,16 @@ class WordsRound {
 	}
 
 	checkWord(word){
+		let done = false;
 		const length = word.length;
 		const spot = this.lists[length].indexOf(word); 
 		if (spot === -1) return false;
-		return {length, spot};
+
+		delete this.lists[length][spot];
+		if (this.lists[length].length == 0) delete this.lists[length];
+		if (this.lists.length == 0) done = true;
+
+		return {length, spot, done};
 	}
 
 	async startRound(){
