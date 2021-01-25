@@ -1,0 +1,29 @@
+{
+	"include": [
+		"$(MODDABLE)/examples/manifest_base.json",
+		"$(MODDABLE)/examples/manifest_net.json",
+		"$(MODDABLE)/modules/crypt/tls.json"
+	],
+	"modules": {
+		"*": [
+			"./main",
+			"./Words",
+			"$(MODULES)/network/http/*"
+		]
+	},
+	"preload": [
+		"http"
+	],
+	"resources": {
+		"*": [
+			"$(MODULES)/crypt/data/ca106",
+			"$(MODULES)/crypt/data/ca109",
+			"$(MODULES)/crypt/data/ca107",
+			"$(MODULES)/crypt/data/ca222"
+		]
+	},
+	"config":{
+		"API_KEY": "SECRET",
+		"API_HOST": "wordsapiv1.p.rapidapi.com"
+	}
+}
