@@ -23,7 +23,10 @@ class GameBehavior extends Behavior {
 		let data = this.data;
 		data["CONTROLS"].delegate("onRoundBegin", word);
 		data["GUESSED_WORDS"].delegate("onRoundBegin", roundData);
-	}
+    }
+    onError(error){
+        trace(`Error fetching words.\n`);
+    }
 }
 
 const Game = Application.template($ => ({

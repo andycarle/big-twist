@@ -9,6 +9,7 @@ const FREQ_MIN = 5;
 const ANAGRAM_HOST = "scrabble.now.sh";
 const ANAGRAM_PATH = "/api";
 
+const API_RETRY = 3;
 //https://scrabble.now.sh/api?letters=qwerty
 
 
@@ -30,46 +31,57 @@ class WordsRound {
 		return {length, spot};
 	}
 
-	startRound(callback){
-		this.getRandom(this.length, word => {
-			trace(`word is: ${word}\n`);
-			if (word.indexOf("-") !== -1 || word.indexOf(" ") !== -1 || word.length != this.length){
-				this.startRound(callback);
-				return;
-			}
+	async startRound(){
+		let word, errors = 0;
 
+		findWord: while (true){
+			try{
+				word = await this.getRandom(this.length);
+			}catch(e){
+				errors++;
+				if (errors >= API_RETRY){
+					application.delegate("onError");
+					return;
+				} 
+				continue findWord;
+			}
+			
+			trace(`word is: ${word}\n`);
+			if (word.indexOf("-") !== -1 || word.indexOf(" ") !== -1 || word.length != this.length)
+				continue findWord;
+			
 			for (let i = 0; i < word.length; i++) {
 				let code = word.charCodeAt(i);
-				if (code < 97 || code > 122){
-					this.startRound(callback);
-					return;
+				if (code < 97 || code > 122) {
+					continue findWord;
 				}
 			}
-
-			this.word = word;
-			// let regex = WordsRound.getRegex(word);
-			this.getList(word, this.minimum, result => {
-				this.list = result;
-				
-				this.lists = {};
-				for (let i in result){
-					const word = result[i];
-					trace(`${word}\n`);
-					const len = word.length;
-					if (!this.lists[len]){
-						this.lists[len] = new Array();
-					}
-					this.lists[len].push(word);
+			break;
+		}
+		
+		this.word = word;
+		// let regex = WordsRound.getRegex(word);
+		this.getList(word, this.minimum, result => {
+			this.list = result;
+			this.lists = {};
+			for (let i in result){
+				const word = result[i];
+				trace(`${word}\n`);
+				const len = word.length;
+				if (!this.lists[len]){
+					this.lists[len] = new Array();
 				}
+				this.lists[len].push(word);
+			}
 
-				let o = {};
-				for (let i in this.lists){
-					o[i] = this.lists[i].length;
-				}
+			let o = {};
+			for (let i in this.lists){
+				o[i] = this.lists[i].length;
+			}
 
-				application.delegate("onRoundBegin", word, o);
-			});
+			application.delegate("onRoundBegin", word, o);
 		});
+	
 	}
 
 	static getRegex(word){
@@ -122,7 +134,7 @@ class WordsRound {
 		}
 	}
 
-	getRandom(length, callback){
+	async getRandom(length, callback){
 		let path = PATH;
 		path += WordsRound.queryStringFromObject({
 			letters: length,
@@ -131,15 +143,21 @@ class WordsRound {
 		})
 
 		trace(`path is ${path}\n`);
-		let request = new Request({
-			host: HOST, response: String, port: 443, Socket: SecureSocket, headers, path
-		});
-		request.callback = (message, value, etc) => {
-			if (message === 5){
-				const obj = JSON.parse(value);
-				callback(obj.word.toLowerCase());
+
+		return new Promise((resolve, reject) => {
+			let request = new Request({
+				host: HOST, response: String, port: 443, Socket: SecureSocket, headers, path
+			});
+			request.callback = function (message, value) {
+				if (5 === message){
+					const obj = JSON.parse(value);
+					const result  = obj.word.toLowerCase();
+					resolve(result);
+				}else if (message < 0){
+					reject(-1);
+				}
 			}
-		}
+		});
 	}
 
 	static traceInfo(word){
