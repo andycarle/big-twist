@@ -2,13 +2,20 @@
 	"include": [
 		"$(MODDABLE)/examples/manifest_base.json",
 		"$(MODDABLE)/examples/manifest_net.json",
-		"$(MODDABLE)/modules/crypt/tls.json"
+		"$(MODDABLE)/modules/crypt/tls.json",
+		"$(MODDABLE)/examples/manifest_piu.json"
 	],
+	"creation": {
+		"stack": 500
+	},
 	"modules": {
 		"*": [
 			"./main",
 			"./Words",
-			"$(MODULES)/network/http/*"
+			"$(MODULES)/network/http/*",
+			"./assets",
+			"./guessed-words",
+			"./controls"
 		]
 	},
 	"preload": [
@@ -20,6 +27,10 @@
 			"$(MODULES)/crypt/data/ca109",
 			"$(MODULES)/crypt/data/ca107",
 			"$(MODULES)/crypt/data/ca222"
+		],
+		"*-mask": [
+			"./fonts/*",
+			"./assets/*"
 		]
 	},
 	"config":{

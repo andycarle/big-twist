@@ -5,7 +5,7 @@ import config from "mc/config";
 
 const HOST = config.API_HOST;
 const PATH = "/words/";
-const FREQ_MIN = 5;
+const FREQ_MIN = 6;
 
 const ANAGRAM_HOST = "scrabble.now.sh";
 const ANAGRAM_PATH = "/api";
