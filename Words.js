@@ -38,6 +38,14 @@ class WordsRound {
 				return;
 			}
 
+			for (let i = 0; i < word.length; i++) {
+				let code = word.charCodeAt(i);
+				if (code < 97 || code > 122){
+					this.startRound(callback);
+					return;
+				}
+			}
+
 			this.word = word;
 			// let regex = WordsRound.getRegex(word);
 			this.getList(word, this.minimum, result => {
@@ -59,7 +67,7 @@ class WordsRound {
 					o[i] = this.lists[i].length;
 				}
 
-				callback(this.word, o)
+				application.delegate("onRoundBegin", word, o);
 			});
 		});
 	}
@@ -129,7 +137,7 @@ class WordsRound {
 		request.callback = (message, value, etc) => {
 			if (message === 5){
 				const obj = JSON.parse(value);
-				callback(obj.word);
+				callback(obj.word.toLowerCase());
 			}
 		}
 	}

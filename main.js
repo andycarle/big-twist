@@ -17,11 +17,7 @@ class GameBehavior extends Behavior {
 		// 	8: 2
 		// });
 		let round = new Round({bigWord: 6, minimumWord: 3 });
-		round.startRound((word, list) => {
-			application.delegate("onRoundBegin", word, list);
-		    // trace(`Word is: ${word}\n`);
-		    // trace(`List is: ${JSON.stringify(list)}\n`);
-		});
+		round.startRound();
 	}
 	onRoundBegin(application, word, roundData) {
 		let data = this.data;
