@@ -2,10 +2,9 @@ import { Request } from "http"
 import SecureSocket from "securesocket";
 import config from "mc/config";
 
-
 const HOST = config.API_HOST;
 const PATH = "/words/";
-const FREQ_MIN = 6;
+const FREQ_MIN = 6.5;
 
 const ANAGRAM_HOST = "scrabble.now.sh";
 const ANAGRAM_PATH = "/api";
@@ -20,25 +19,46 @@ class WordsRound {
 	constructor(options){
 		this.length = options.bigWord;
 		this.minimum = options.minimumWord;
+		this.frequency = options.minimumFrequency ?? FREQ_MIN;
+		this.lists = {};
+	}
+
+	checkWord(word){
+		const length = word.length;
+		const spot = this.lists[length].indexOf(word); 
+		if (spot === -1) return false;
+		return {length, spot};
 	}
 
 	startRound(callback){
 		this.getRandom(this.length, word => {
 			trace(`word is: ${word}\n`);
+			if (word.indexOf("-") !== -1 || word.indexOf(" ") !== -1 || word.length != this.length){
+				this.startRound(callback);
+				return;
+			}
+
 			this.word = word;
 			// let regex = WordsRound.getRegex(word);
 			this.getList(word, this.minimum, result => {
 				this.list = result;
-				let o = {};
+				
+				this.lists = {};
 				for (let i in result){
 					const word = result[i];
+					trace(`${word}\n`);
 					const len = word.length;
-					if (o[len]){
-						o[len]++;
-					}else{
-						o[len] = 1;
+					if (!this.lists[len]){
+						this.lists[len] = new Array();
 					}
+					this.lists[len].push(word);
 				}
+
+				let o = {};
+				for (let i in this.lists){
+					o[i] = this.lists[i].length;
+				}
+
 				callback(this.word, o)
 			});
 		});
@@ -98,10 +118,11 @@ class WordsRound {
 		let path = PATH;
 		path += WordsRound.queryStringFromObject({
 			letters: length,
-			frequencymin: FREQ_MIN,
+			frequencymin: this.frequency,
 			random: "true"
 		})
 
+		trace(`path is ${path}\n`);
 		let request = new Request({
 			host: HOST, response: String, port: 443, Socket: SecureSocket, headers, path
 		});
