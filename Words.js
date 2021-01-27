@@ -14,15 +14,43 @@ const API_RETRY = 3;
 
 
 const headers = ["x-rapidapi-key", config.API_KEY, "x-rapidapi-host", config.API_HOST];
+const POINTS = [0, 0, 30 * 3, 50 * 4, 70 * 5, 90 * 6, 120 * 7, 150 * 8, 180 * 9];
+
 
 class WordsRound {
 
 	constructor(options){
 		if (config.API_KEY === "SECRET") throw new Error("Fill in API key in manifest.");
+		this.points = 0;
+		this.totalPoints = options.totalPoints ?? 0;
 		this.length = options.bigWord;
 		this.minimum = options.minimumWord;
 		this.frequency = options.minimumFrequency ?? FREQ_MIN;
 		this.lists = {};
+	}
+
+	updateState(alreadyGuessed, length, spot){
+		let newCorrect = undefined;
+		let newPoints = 0;
+		let done = false;
+		if (length !== undefined && spot != undefined){
+			newPoints = POINTS[length];
+			this.points += newPoints;
+			this.totalPoints += newPoints;
+			newlyCorrect = {
+				length,
+				spot
+			}
+			if (this.list.length == 0) done = true;
+		}
+		return {
+			alreadyGuessed,
+			newCorrect,
+			roundScore: this.points,
+			totalScore: this.totalPoints,
+			newPoints,
+			done
+		};
 	}
 
 	checkWord(word){
@@ -30,13 +58,12 @@ class WordsRound {
 		let remaining = this.list.indexOf(word);
 		const length = word.length;
 		const spot = this.lists[length].indexOf(word); 
-		if (spot === -1) return false;
-		if (remaining === -1) return "guessed";
+
+		if (spot === -1) return this.updateState(false);
+		if (remaining === -1) return this.updateState(true);
 
 		delete this.list[remaining];
-		if (this.list.length == 0) done = true;
-
-		return {length, spot, done};
+		return this.updateState(false, length, spot);
 	}
 
 	async startRound(){
