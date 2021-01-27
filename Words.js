@@ -14,7 +14,7 @@ const API_RETRY = 3;
 
 
 const headers = ["x-rapidapi-key", config.API_KEY, "x-rapidapi-host", config.API_HOST];
-const POINTS = [0, 0, 30 * 3, 50 * 4, 70 * 5, 90 * 6, 120 * 7, 150 * 8, 180 * 9];
+const POINTS = [0, 0, 0, 30 * 3, 50 * 4, 70 * 5, 90 * 6, 120 * 7, 150 * 8, 180 * 9];
 
 
 class WordsRound {

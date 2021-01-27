@@ -1,5 +1,6 @@
 import Timeline from "piu/Timeline";
 import ASSETS from "assets";
+import Timer from "timer";
 
 const CircleTexture = Texture.template({ path: "circle.png" });
 const CircleSkin = Skin.template({
@@ -194,7 +195,10 @@ class SquaresRowBehavior extends Behavior {
 	}
 	enterWord(container) {
 		this.lastWord = this.word;
-		// submit this.word;
+		Timer.set(()=>{
+			container.delegate("clearLetters");
+		}, 250);
+		container.bubble("onSubmitButton", this.word);
 	}
 	getLastWord(container) {
 		// TO DO
@@ -258,10 +262,56 @@ const ControlsCol = Column.template($ => ({
 				new Button({ string: "CLEAR", action: "clearLetters" })
 			]
 		}),
-		Label($, {
-			top: 80, height: 50, width: 280, skin: { fill: ASSETS.LIGHT_COLOR },
-			Style: ASSETS.SmallStyle, state: 1, string: "NEW ROUND",
-			active: true, Behavior: NewRoundButtonBehavior
+		Row($, {
+			top: 80, height: 50, left: 0, right: 0,
+			contents: [
+				Column($, {
+					top: 0, bottom: 0, left: 0, right: 0,
+					contents:[
+						Label($, {
+							anchor: "SCORE", top: 5, left: 5, height: 52, width: 400, skin: { fill: ASSETS.LIGHT_COLOR},
+							Style: ASSETS.NumberStyle, state: 1, string: "Score: ",
+							Behavior: class extends Behavior {
+								onScoreUpdate(label, score){
+									label.string = "Score: " + score;
+								}
+							}
+						}),
+						Label($, {
+							anchor: "TIME", top: 5, left: 5, height: 52, width: 400, skin: { fill: ASSETS.LIGHT_COLOR },
+							Style: ASSETS.NumberStyle, state: 1, string: "Time: ",
+							Behavior: class extends Behavior {
+								updateTimeString(label){
+									let timeLeft = label.duration - label.time;
+									timeLeft = Math.floor(timeLeft / 1000);
+									const min = Math.floor(timeLeft / 60);
+									const sec = (timeLeft % 60).toString().padStart(2,"0)");
+									label.string = `Time: ${min}:${sec}`;
+								}
+								onRoundStart(label, duration) {
+									this.maxTime = duration;
+									label.duration = duration * 1000;
+									label.time = 0;
+									label.interval = 250;
+									label.start();
+									this.updateTimeString(label);
+								}
+								onTimeChanged(label) {
+									this.updateTimeString(label);
+								}
+								onFinished(label) {
+									label.bubble("onTimeExpired");
+								}
+							}
+						})
+					]
+				}),
+				Label($, {
+					left: 5, top: 20, height: 50, width: 280, skin: { fill: ASSETS.LIGHT_COLOR },
+					Style: ASSETS.SmallStyle, state: 1, string: "NEW ROUND",
+					active: true, Behavior: NewRoundButtonBehavior
+				})
+			]	
 		}),
 		Content($, {top: 0, bottom: 0})
 	],

@@ -3,10 +3,12 @@ import ASSETS from "assets";
 import LeftCol from "guessed-words";
 import RightCol from "controls";
 
+const GAME_TIME = 180;
+
 class GameBehavior extends Behavior {
 	onCreate(application, data) {
 		this.data = data;
-	}
+    }
 	onRequestNewRound(application) {
 		// this.onRoundBegin(application, "testing", {
 		// 	3: 2,
@@ -16,13 +18,25 @@ class GameBehavior extends Behavior {
 		// 	7: 1,
 		// 	8: 2
 		// });
-		let round = new Round({bigWord: 6, minimumWord: 3 });
-		round.startRound();
+		this.round = new Round({bigWord: 6, minimumWord: 3 });
+		this.round.startRound();
 	}
 	onRoundBegin(application, word, roundData) {
 		let data = this.data;
 		data["CONTROLS"].delegate("onRoundBegin", word);
-		data["GUESSED_WORDS"].delegate("onRoundBegin", roundData);
+        data["GUESSED_WORDS"].delegate("onRoundBegin", roundData);
+        application.distribute("onRoundStart", GAME_TIME);
+    }
+    onSubmitButton(application, word){
+        if (word === undefined || word.length === 0) return;
+        let result = this.round.checkWord(word);
+        trace(`${JSON.stringify(result)}`);
+        if (result.newCorrect){
+            application.distribute("onScoreUpdate", result.totalScore);
+        }
+    }
+    onTimeExpired(application) {
+        trace(`Oh no!\n`);
     }
     onError(error){
         trace(`Error fetching words.\n`);
@@ -31,11 +45,11 @@ class GameBehavior extends Behavior {
 
 const Game = Application.template($ => ({
 	top: 0, bottom: 0, left: 0, right: 0,
-	Skin: ASSETS.BackgroundSkin,
+    Skin: ASSETS.BackgroundSkin,
 	contents: [
 		new LeftCol($),
 		new RightCol($)
-	],
+	],  
 	Behavior: GameBehavior
 }));
 

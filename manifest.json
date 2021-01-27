@@ -30,7 +30,8 @@
 		],
 		"*-mask": [
 			"./fonts/*",
-			"./assets/*"
+			"./assets/*",
+			"$(MODDABLE)/examples/assets/fonts/OpenSans-Regular-52"
 		]
 	},
 	"config":{
