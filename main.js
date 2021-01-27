@@ -33,10 +33,14 @@ class GameBehavior extends Behavior {
         trace(`${JSON.stringify(result)}`);
         if (result.newCorrect){
             application.distribute("onScoreUpdate", result.totalScore);
+            application.distribute("onWordFound", word, result.newCorrect.length, result.newCorrect.spot, 1);
         }
     }
     onTimeExpired(application) {
-        trace(`Oh no!\n`);
+        let remaining = this.round.getRest();
+        for (let i of remaining){
+            application.distribute("onWordFound", i.word.toUpperCase(), i.length, i.spot, 2);
+        }
     }
     onError(error){
         trace(`Error fetching words.\n`);

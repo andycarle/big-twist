@@ -64,8 +64,18 @@ class WordsRound {
 		if (spot === -1) return this.updateState(false);
 		if (remaining === -1) return this.updateState(true);
 
-		delete this.list[remaining];
+		this.list.splice(remaining, 1);
 		return this.updateState(false, length, spot);
+	}
+
+	getRest(){
+		let a = [];
+		for (let word of this.list){
+			const length = word.length;
+			const spot = this.lists[length].indexOf(word);
+			a.push({word, length, spot})
+		}
+		return a;
 	}
 
 	async startRound(){

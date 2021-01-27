@@ -16,9 +16,20 @@ const SmallLetterSquare = Label.template($ => ({
 class WordBehavior extends Behavior {
 	onCreate(row, data) {
 		this.index = data.index;
-		let numberOfLetters = data.letters;
-		for (let i=0; i<numberOfLetters; i++) {
+		this.numberOfLetters = data.letters;
+		for (let i = 0; i < this.numberOfLetters; i++) {
 			row.add(new SmallLetterSquare)
+		}
+	}
+
+	onWordFound(row, word, numberOfLetters, index, state){
+		if (!(this.index == index && this.numberOfLetters == numberOfLetters))
+			return;
+
+		for (let i = 0; i < word.length; i++){
+			let char = word.charAt(i);
+			row.content(i).state = state;
+			row.content(i).string = char;
 		}
 	}
 }
