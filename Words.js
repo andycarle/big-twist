@@ -37,7 +37,7 @@ class WordsRound {
 			newPoints = POINTS[length];
 			this.points += newPoints;
 			this.totalPoints += newPoints;
-			newlyCorrect = {
+			newCorrect = {
 				length,
 				spot
 			}
@@ -55,9 +55,10 @@ class WordsRound {
 
 	checkWord(word){
 		let done = false;
-		let remaining = this.list.indexOf(word);
+		const lowerCase = word.toLowerCase();
+		let remaining = this.list.indexOf(lowerCase);
 		const length = word.length;
-		const spot = this.lists[length].indexOf(word); 
+		const spot = this.lists[length].indexOf(lowerCase); 
 
 		if (spot === -1) return this.updateState(false);
 		if (remaining === -1) return this.updateState(true);
@@ -120,7 +121,7 @@ class WordsRound {
 			if (!this.lists[len]){
 				this.lists[len] = new Array();
 			}
-			this.lists[len].push({word, guessed: false});
+			this.lists[len].push(word);
 		}
 
 		let o = {};
