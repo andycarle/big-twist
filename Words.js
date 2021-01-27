@@ -18,6 +18,7 @@ const headers = ["x-rapidapi-key", config.API_KEY, "x-rapidapi-host", config.API
 class WordsRound {
 
 	constructor(options){
+		if (config.API_KEY === "SECRET") throw new Error("Fill in API key in manifest.");
 		this.length = options.bigWord;
 		this.minimum = options.minimumWord;
 		this.frequency = options.minimumFrequency ?? FREQ_MIN;
@@ -26,13 +27,14 @@ class WordsRound {
 
 	checkWord(word){
 		let done = false;
+		let remaining = this.list.indexOf(word);
 		const length = word.length;
 		const spot = this.lists[length].indexOf(word); 
 		if (spot === -1) return false;
+		if (remaining === -1) return "guessed";
 
-		delete this.lists[length][spot];
-		if (this.lists[length].length == 0) delete this.lists[length];
-		if (this.lists.length == 0) done = true;
+		delete this.list[remaining];
+		if (this.list.length == 0) done = true;
 
 		return {length, spot, done};
 	}
@@ -67,27 +69,39 @@ class WordsRound {
 		
 		this.word = word;
 		// let regex = WordsRound.getRegex(word);
-		this.getList(word, this.minimum, result => {
-			this.list = result;
-			this.lists = {};
-			for (let i in result){
-				const word = result[i];
-				trace(`${word}\n`);
-				const len = word.length;
-				if (!this.lists[len]){
-					this.lists[len] = new Array();
-				}
-				this.lists[len].push(word);
+		let wordList;
+		errors = 0;
+		while(wordList === undefined){
+			try{
+				wordList = await this.getList(word, this.minimum);
+			}catch(e){
+				wordList = undefined;
+				errors++;
+				if (errors >= API_RETRY){
+					application.delegate("onError");
+					return;
+				} 
 			}
-
-			let o = {};
-			for (let i in this.lists){
-				o[i] = this.lists[i].length;
+		}
+		 
+		this.list = wordList;
+		this.lists = {};
+		for (let i in this.list){
+			const word = this.list[i];
+			trace(`${word}\n`);
+			const len = word.length;
+			if (!this.lists[len]){
+				this.lists[len] = new Array();
 			}
+			this.lists[len].push({word, guessed: false});
+		}
 
-			application.delegate("onRoundBegin", word, o);
-		});
-	
+		let o = {};
+		for (let i in this.lists){
+			o[i] = this.lists[i].length;
+		}
+
+		application.delegate("onRoundBegin", word, o);
 	}
 
 	static getRegex(word){
@@ -113,31 +127,36 @@ class WordsRound {
 		return regex;
 	}
 
-	getList(word, min, callback){
+	async getList(word, min, callback){
 		let path = ANAGRAM_PATH;
 		path += WordsRound.queryStringFromObject({
 			letters: word
 		});
 
 		trace(`path: ${path}\n`);
-		let request = new Request({
-			host: ANAGRAM_HOST, response: String, port: 443, Socket: SecureSocket, path, secure: {protocolVersion: 0x303}
-		});
-		request.callback = (message, value, etc) => {
-			if (message === 5){
-				const array = JSON.parse(value);
-				let longOnly = array.filter(word => word.length >= min);
-				if (!longOnly.includes(word)) longOnly.push(word);
-				longOnly.sort((a,b)=>{
-					if (a.length < b.length) return -1;
-					if (b.length < a.length) return 1;
-					if (a < b) return -1;
-					if (b < a) return 1;
-					return 0;
-				})
-				callback(longOnly);
+
+		return new Promise((resolve, reject) => {
+			let request = new Request({
+				host: ANAGRAM_HOST, response: String, port: 443, Socket: SecureSocket, path, secure: {protocolVersion: 0x303}
+			});
+			request.callback = (message, value) => {
+				if (message === 5){
+					const array = JSON.parse(value);
+					let longOnly = array.filter(word => word.length >= min);
+					if (!longOnly.includes(word)) longOnly.push(word);
+					longOnly.sort((a,b)=>{
+						if (a.length < b.length) return -1;
+						if (b.length < a.length) return 1;
+						if (a < b) return -1;
+						if (b < a) return 1;
+						return 0;
+					})
+					resolve(longOnly);
+				}else if (message < 0){
+					reject(-1);
+				}
 			}
-		}
+		});
 	}
 
 	async getRandom(length, callback){
