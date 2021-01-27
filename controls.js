@@ -35,6 +35,11 @@ class CircleLetterBehavior extends Behavior {
 	getIndex(circle) {
 		return this.index;
 	}
+	moveBack(circle) {
+		circle.x = this.origX;
+		circle.y = this.origY;
+		this.placed = false;
+	}
 }
 
 const CircleLetter = Label.template($ => ({
@@ -168,6 +173,17 @@ class SquaresRowBehavior extends Behavior {
 			container.start();
 		}
 	}
+	clearLetters(container) {
+		let square = container.first;
+		while (square && square.length) {
+			let letter = square.first;
+			square.remove(letter);
+			this.data["CIRCLES"].add(letter);
+			letter.delegate("moveBack");
+			square = square.next;
+		}
+		this.word = "";
+	}
 	onTimeChanged(container) {
 		this.timeline.seekTo(container.time);
 	}
@@ -181,6 +197,16 @@ class SquaresRowBehavior extends Behavior {
 			case SQUISHING:
 				break;
 		}
+	}
+	enterWord(container) {
+		this.lastWord = this.word;
+		// submit this.word;
+	}
+	getLastWord(container) {
+		// TO DO
+	}
+	scrambleLetters(container) {
+		// TO DO
 	}
 }
 
@@ -202,6 +228,21 @@ class EnterButtonBehavior extends Behavior {
 	}
 }
 
+class ButtonBehavior extends Behavior {
+	onCreate(button, data) {
+		this.action = data.action;
+	}
+	onTouchBegan(button) {
+		application.distribute(this.action);
+	}
+}
+
+const Button = Label.template($ => ({
+	height: 50, left: 10, right: 10, skin: { fill: ASSETS.LIGHT_COLOR },
+	Style: ASSETS.SmallStyle, state: 1, string: $.string,
+	active: true, Behavior: ButtonBehavior
+}));
+
 const ControlsCol = Column.template($ => ({
 	anchor: "CONTROLS", left: 400, right: 0, top: 0, bottom: 0,
 	Style: ASSETS.BigStyle,
@@ -217,11 +258,10 @@ const ControlsCol = Column.template($ => ({
 		Row($, {
 			anchor: "BUTTONS", top: 80, height: 100, left: 0, right: 0,
 			contents: [
-				Label($, {
-					height: 50, width: 175, skin: { fill: ASSETS.LIGHT_COLOR },
-					Style: ASSETS.SmallStyle, state: 1, string: "ENTER",
-					active: true, Behavior: EnterButtonBehavior
-				}),
+				new Button({ string: "TWIST", action: "scrambleLetters" }),
+				new Button({ string: "ENTER", action: "enterWord" }),
+				new Button({ string: "LAST WORD", action: "getLastWord" }),
+				new Button({ string: "CLEAR", action: "clearLetters" })
 			]
 		}),
 		Label($, {
