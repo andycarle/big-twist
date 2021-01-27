@@ -29,12 +29,6 @@ class CircleLetterBehavior extends Behavior {
 			this.placed = true;
 		}
 	}
-	setIndex(circle, index) {
-		this.index = index;
-	}
-	getIndex(circle) {
-		return this.index;
-	}
 	moveBack(circle) {
 		circle.x = this.origX;
 		circle.y = this.origY;
@@ -109,7 +103,6 @@ class SquaresRowBehavior extends Behavior {
 		this.state = ADDING;
 		this.letter = letter;
 		let index = this.word.length;
-		letter.delegate("setIndex", index);
 		let square = container.content(index);
 
 		let timeline = this.timeline = new Timeline();
@@ -128,7 +121,8 @@ class SquaresRowBehavior extends Behavior {
 	removeLetter(container, letter, origX, origY) {
 		this.state = REMOVING;
 		this.letter = letter;
-		let index = letter.delegate("getIndex");
+		let index = letter.container.index;
+		trace(`index: ${index}\n`)
 		let square = this.square = letter.container;
 
 		let timeline = this.timeline = new Timeline();
