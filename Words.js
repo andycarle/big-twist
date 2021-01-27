@@ -55,6 +55,7 @@ class WordsRound {
 
 	checkWord(word){
 		let done = false;
+		if (word.length < this.minimum) return this.updateState(false);
 		const lowerCase = word.toLowerCase();
 		let remaining = this.list.indexOf(lowerCase);
 		const length = word.length;
