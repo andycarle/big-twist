@@ -12,14 +12,33 @@ class CircleLetterBehavior extends Behavior {
 	onCreate(circle, data) {
 		this.data = data;
 	}
+	onDisplaying(circle) {
+		if (!this.origX) {
+			this.origX = circle.x;
+			this.origY = circle.y;
+		}
+		// trace(`${this.origX}, ${this.origY}\n`)
+	}
 	onTouchBegan(circle) {
-		trace(`tapped ${circle.string}\n`);
-		this.data["SQUARES"].delegate("addLetter", circle);
+		// trace(`tapped ${circle.string}\n`);
+		if (this.placed) {
+			this.data["SQUARES"].delegate("removeLetter", circle, this.origX, this.origY);
+			this.placed = false;
+		} else {
+			this.data["SQUARES"].delegate("addLetter", circle, this.origX, this.origY);
+			this.placed = true;
+		}
+	}
+	setIndex(circle, index) {
+		this.index = index;
+	}
+	getIndex(circle) {
+		return this.index;
 	}
 }
 
 const CircleLetter = Label.template($ => ({
-	height: 90, width: 90, top: 0,
+	height: 90, width: 90, top: 0, left: 0,
 	Skin: CircleSkin, Style: ASSETS.BigStyle, state: 1,
 	active: true, Behavior: CircleLetterBehavior
 }));
@@ -42,9 +61,9 @@ const LargeSquareSkin = Skin.template({
 	x: 0, y: 0, height: 100, width: 100
 });
 
-const BigLetterSquare = Content.template($ => ({
-	height: 100, width: 100, top: 0,Skin: LargeSquareSkin
-}));
+const BigLetterSquare = Container.template($ => ({
+	height: 100, width: 100, top: 0, Skin: LargeSquareSkin
+})); 
 
 class ControlsColBehavior extends Behavior {
 	onCreate(column, data) {
@@ -69,6 +88,10 @@ class ControlsColBehavior extends Behavior {
 	}
 }
 
+const ADDING = 0;
+const REMOVING = 1;
+const SQUISHING = 2;
+
 class SquaresRowBehavior extends Behavior {
 	onCreate(container, data) {
 		this.data = data;
@@ -77,22 +100,87 @@ class SquaresRowBehavior extends Behavior {
 	onRoundBegin(container) {
 		this.word = "";
 	}
-	addLetter(container, letter) {
+	addLetter(container, letter, origX, origY) {
+		this.state = ADDING;
+		this.letter = letter;
 		let index = this.word.length;
-		let x = container.content(index).x + 5;
-		let y = container.content(index).y + 5;
+		letter.delegate("setIndex", index);
+		let square = container.content(index);
+
 		let timeline = this.timeline = new Timeline();
-		timeline.to(letter, { x, y }, 150, Math.quadEaseOut, 0);
+		timeline.on(letter, { x: [origX, square.x+5], y: [origY, square.y+5] }, 150, Math.quadEaseOut, 0);
+		letter.container.remove(letter);
+		square.add(letter);
+
 		timeline.seekTo(0);
 		container.duration = timeline.duration;
 		container.time = 0;
 		container.start();
 
 		this.word += letter.string;
+		trace(`word is: ${this.word}\n`);
+	}
+	removeLetter(container, letter, origX, origY) {
+		this.state = REMOVING;
+		this.letter = letter;
+		let index = letter.delegate("getIndex");
+		let square = this.square = letter.container;
+
+		let timeline = this.timeline = new Timeline();
+		timeline.on(letter, { x: [letter.x, origX], y: [letter.y, origY] }, 150, Math.quadEaseOut, 0);
+		square.remove(letter);
+		this.data["CIRCLES"].add(letter);
+
+		timeline.seekTo(0);
+		container.duration = timeline.duration;
+		container.time = 0;
+		container.start();
+
+		this.word = this.word.slice(0, index) + this.word.slice(index+1);
 		trace(`word is: ${this.word}\n`)
+	}
+	squishLetters(container) {
+		this.state = SQUISHING;
+
+		let emptySquare = this.square;
+		let nextSquare = emptySquare.next;
+		if ((!nextSquare) || (nextSquare.length == 0))
+			return;
+		else {
+			let timeline = this.timeline = new Timeline();
+			let letter = nextSquare.first;
+			timeline.on(letter, { x: [letter.x, emptySquare.x+5], y: [letter.y, emptySquare.y+5] }, 150, Math.quadEaseOut, 0);
+			nextSquare.remove(letter);
+			emptySquare.add(letter);
+			emptySquare = nextSquare;
+			nextSquare = nextSquare.next;
+			while (nextSquare && nextSquare.length) {
+				letter = nextSquare.first;
+				timeline.on(letter, { x: [letter.x, emptySquare.x+5], y: [letter.y, emptySquare.y+5] }, 150, Math.quadEaseOut, -75);
+				nextSquare.remove(letter);
+				emptySquare.add(letter);
+				emptySquare = nextSquare;
+				nextSquare = nextSquare.next;
+			}
+			timeline.seekTo(0);
+			container.duration = timeline.duration;
+			container.time = 0;
+			container.start();
+		}
 	}
 	onTimeChanged(container) {
 		this.timeline.seekTo(container.time);
+	}
+	onFinished(container) {
+		switch (this.state) {
+			case ADDING:
+				break;
+			case REMOVING:
+				this.squishLetters(container);
+				break;
+			case SQUISHING:
+				break;
+		}
 	}
 }
 
@@ -102,6 +190,15 @@ class NewRoundButtonBehavior extends Behavior {
 	}
 	onTouchBegan(content) {
 		application.delegate("onRequestNewRound");
+	}
+}
+
+class EnterButtonBehavior extends Behavior {
+	onCreate(content, data) {
+		this.data = data;
+	}
+	onTouchBegan(content) {
+		// do stuff
 	}
 }
 
@@ -116,6 +213,16 @@ const ControlsCol = Column.template($ => ({
 		}),
 		Container($, {
 			anchor: "CIRCLES", top: 80, height: 100, left: 0, right: 0,
+		}),
+		Row($, {
+			anchor: "BUTTONS", top: 80, height: 100, left: 0, right: 0,
+			contents: [
+				Label($, {
+					height: 50, width: 175, skin: { fill: ASSETS.LIGHT_COLOR },
+					Style: ASSETS.SmallStyle, state: 1, string: "ENTER",
+					active: true, Behavior: EnterButtonBehavior
+				}),
+			]
 		}),
 		Label($, {
 			top: 80, height: 50, width: 280, skin: { fill: ASSETS.LIGHT_COLOR },
