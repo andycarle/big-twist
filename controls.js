@@ -18,10 +18,8 @@ class CircleLetterBehavior extends Behavior {
 			this.origX = circle.x;
 			this.origY = circle.y;
 		}
-		// trace(`${this.origX}, ${this.origY}\n`)
 	}
 	onTouchBegan(circle) {
-		// trace(`tapped ${circle.string}\n`);
 		if (this.placed) {
 			this.data["SQUARES"].delegate("removeLetter", circle, this.origX, this.origY);
 			this.placed = false;
@@ -71,10 +69,37 @@ class ControlsColBehavior extends Behavior {
 	}
 	onRoundBegin(column, word) {
 		let data = this.data;
-		word = word.toUpperCase();
+		word = this.word = word.toUpperCase();
 		let squaresRow = data["SQUARES"];
 		let circlesRow = data["CIRCLES"];
 		squaresRow.delegate("onRoundBegin");
+		squaresRow.empty();
+		circlesRow.empty();
+		for (let left=0; word.length; left+=110) {
+			let randomLetterIndex = Math.round(Math.random() * (word.length-1));
+			let letter = word[randomLetterIndex];
+			word = word.replace(letter, "");
+			squaresRow.add(new BigLetterSquare(data, { left }));
+			circlesRow.add(new CirclePlaceHolder(data, { left: left+22 }));
+			circlesRow.add(new CircleLetter(data, { string: letter, left }));
+		}
+		this.resetButtons(column);
+	}
+	resetButtons(column) {
+		let button = this.data["BUTTONS"].first; // twist
+		button.delegate("enable");
+		button = button.next; // enter
+		button.delegate("disable");
+		button = button.next; // last word
+		button.delegate("disable");
+		button = button.next; // clear
+		button.delegate("disable");
+	}
+	scrambleLetters(column) {
+		let data = this.data;
+		let word = this.word;
+		let squaresRow = data["SQUARES"];
+		let circlesRow = data["CIRCLES"];
 		squaresRow.empty();
 		circlesRow.empty();
 		for (let left=0; word.length; left+=110) {
@@ -91,6 +116,7 @@ class ControlsColBehavior extends Behavior {
 const ADDING = 0;
 const REMOVING = 1;
 const SQUISHING = 2;
+const REPLACING = 3;
 
 class SquaresRowBehavior extends Behavior {
 	onCreate(container, data) {
@@ -118,6 +144,10 @@ class SquaresRowBehavior extends Behavior {
 
 		this.word += letter.string;
 		trace(`word is: ${this.word}\n`);
+		if (this.word.length == 1)
+			this.data["BUTTONS"].last.delegate("enable");			// enable the clear button
+		if (this.word.length == 3)
+			this.data["BUTTONS"].first.next.delegate("enable");		// enable the enter button
 	}
 	removeLetter(container, letter, origX, origY) {
 		this.state = REMOVING;
@@ -138,6 +168,10 @@ class SquaresRowBehavior extends Behavior {
 
 		this.word = this.word.slice(0, index) + this.word.slice(index+1);
 		trace(`word is: ${this.word}\n`)
+		if (this.word.length == 0)
+			this.data["BUTTONS"].last.delegate("disable");			// disable the clear button
+		if (this.word.length < 3)
+			this.data["BUTTONS"].first.next.delegate("disable");	// disable the enter button
 	}
 	squishLetters(container) {
 		this.state = SQUISHING;
@@ -178,6 +212,8 @@ class SquaresRowBehavior extends Behavior {
 			square = square.next;
 		}
 		this.word = "";
+		this.data["BUTTONS"].first.next.delegate("disable");	// disable the enter button
+		this.data["BUTTONS"].last.delegate("disable");			// disable the clear button		
 	}
 	onTimeChanged(container) {
 		this.timeline.seekTo(container.time);
@@ -191,6 +227,8 @@ class SquaresRowBehavior extends Behavior {
 				break;
 			case SQUISHING:
 				break;
+			case REPLACING:
+				break;
 		}
 	}
 	enterWord(container) {
@@ -199,12 +237,39 @@ class SquaresRowBehavior extends Behavior {
 			container.delegate("clearLetters");
 		}, 250);
 		container.bubble("onSubmitButton", this.word);
+		this.data["BUTTONS"].last.previous.delegate("enable");		// enable the last button
 	}
 	getLastWord(container) {
-		// TO DO
+		this.state = REPLACING;
+
+		let word = this.word = this.lastWord;
+		let square = container.first;
+		let letter = this.findLetter(word[0]);
+		let timeline = this.timeline = new Timeline();
+		timeline.on(letter, { x: [letter.x, square.x+5], y: [letter.y, square.y+5] }, 150, Math.quadEaseOut, 0);
+		letter.container.remove(letter);
+		square.add(letter);
+		for (let i=1; i<word.length; i++) {
+			square = square.next;
+			letter = this.findLetter(word[i]);
+			timeline.on(letter, { x: [letter.x, square.x+5], y: [letter.y, square.y+5] }, 150, Math.quadEaseOut, -75);
+			letter.container.remove(letter);
+			square.add(letter);
+		}
+		timeline.seekTo(0);
+		container.duration = timeline.duration;
+		container.time = 0;
+		container.start();
+		this.data["BUTTONS"].first.next.delegate("enable");	// enable the enter button
+		this.data["BUTTONS"].last.delegate("enable");		// enable the clear button				
 	}
-	scrambleLetters(container) {
-		// TO DO
+	findLetter(letter) {
+		let circle = this.data["CIRCLES"].first;
+		let x = circle.string;x
+		while (circle.string != letter) {
+			circle = circle.next;
+		}
+		return circle;
 	}
 }
 
@@ -217,15 +282,6 @@ class NewRoundButtonBehavior extends Behavior {
 	}
 }
 
-class EnterButtonBehavior extends Behavior {
-	onCreate(content, data) {
-		this.data = data;
-	}
-	onTouchBegan(content) {
-		// do stuff
-	}
-}
-
 class ButtonBehavior extends Behavior {
 	onCreate(button, data) {
 		this.action = data.action;
@@ -233,10 +289,18 @@ class ButtonBehavior extends Behavior {
 	onTouchBegan(button) {
 		application.distribute(this.action);
 	}
+	disable(button) {
+		button.state = 1;
+		button.active = false;
+	}
+	enable(button) {
+		button.state = 0;
+		button.active = true;
+	}
 }
 
 const Button = Label.template($ => ({
-	height: 50, left: 10, right: 10, skin: { fill: ASSETS.LIGHT_COLOR },
+	height: 50, left: 10, right: 10, skin: { fill: [ASSETS.LIGHT_COLOR, ASSETS.INACTIVE_COLOR] },
 	Style: ASSETS.SmallStyle, state: 1, string: $.string,
 	active: true, Behavior: ButtonBehavior
 }));
