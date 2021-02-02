@@ -300,13 +300,13 @@ class ButtonBehavior extends Behavior {
 }
 
 const Button = Label.template($ => ({
-	height: 50, left: 10, right: 10, skin: { fill: [ASSETS.LIGHT_COLOR, ASSETS.INACTIVE_COLOR] },
+	height: 50, skin: { fill: [ASSETS.LIGHT_COLOR, ASSETS.INACTIVE_COLOR] },
 	Style: ASSETS.SmallStyle, state: 1, string: $.string,
 	active: true, Behavior: ButtonBehavior
 }));
 
 const ControlsCol = Column.template($ => ({
-	anchor: "CONTROLS", left: 400, right: 0, top: 0, bottom: 0,
+	anchor: "CONTROLS", left: 500, right: 0, top: 0, bottom: 0,
 	Style: ASSETS.BigStyle,
 	contents: [
 		Content($, {top: 0, bottom: 0}),
@@ -317,13 +317,13 @@ const ControlsCol = Column.template($ => ({
 		Container($, {
 			anchor: "CIRCLES", top: 80, height: 100, left: 0, right: 0,
 		}),
-		Row($, {
-			anchor: "BUTTONS", top: 80, height: 100, left: 0, right: 0,
+		Container($, {
+			anchor: "BUTTONS", top: 80, height: 110, width: 458,
 			contents: [
-				new Button({ string: "TWIST", action: "scrambleLetters" }),
-				new Button({ string: "ENTER", action: "enterWord" }),
-				new Button({ string: "LAST WORD", action: "getLastWord" }),
-				new Button({ string: "CLEAR", action: "clearLetters" })
+				new Button({ string: "TWIST", action: "scrambleLetters" }, { width: 177, top: 0, left: 48 }),
+				new Button({ string: "ENTER", action: "enterWord" }, { width: 175, top: 0, right: 48  }),
+				new Button({ string: "LAST WORD", action: "getLastWord" }, { width: 274, bottom: 0, left: 0 }),
+				new Button({ string: "CLEAR", action: "clearLetters" }, { width: 174, bottom: 0, right: 0 })
 			]
 		}),
 		Row($, {

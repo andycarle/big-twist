@@ -21,7 +21,6 @@ class WordBehavior extends Behavior {
 			row.add(new SmallLetterSquare)
 		}
 	}
-
 	onWordFound(row, word, numberOfLetters, index, state){
 		if (!(this.index == index && this.numberOfLetters == numberOfLetters))
 			return;
@@ -39,41 +38,88 @@ const Word = Row.template($ => ({
 	Behavior: WordBehavior
 }));
 
-class GuessedWordsColBehavior extends Behavior {
+class GuessedWordsContainerBehavior extends Behavior {
 	onCreate(column, data) {
-
+		this.data = data;
 	}
 	onRoundBegin(column, roundData) {
 		column.empty();
-		/*
-			keys are number of letters, value is number of words with `key` letters. For example:
-				{
-					3: 11,
-					4: 10
-					5: 8
-					6: 6
-					7: 3
-					8: 1
+		let threeCols = [3];
+		let twoCols = [4, 5];
+		let oneCol = [6, 7, 8];
 
+		for (let i of threeCols) {
+			if (roundData[i]) {
+				let numberOfWords = roundData[i];
+				let container = new Row({ numberofLetters: i }, { top: 0, width: 500, Behavior: ThreeColumnBehavior });
+				column.add(container);
+				container.delegate("onFill", numberOfWords);	
+			}
+		}
+
+		for (let i of twoCols) {
+			if (roundData[i]) {
+				let numberOfWords = roundData[i];
+				let container = new Row({ numberofLetters: i }, { top: 0, width: 500, Behavior: TwoColumnBehavior });
+				column.add(container);
+				container.delegate("onFill", numberOfWords);	
+			}
+		}
+
+		for (let i of oneCol) {
+			if (roundData[i]) {
+				let numberOfWords = roundData[i];
+				let container = new Column({}, { top: 0, width: 500 });
+				column.add(container);
+				let indices = [...Array(numberOfWords).keys()];
+				for (let index of indices) {
+					container.add(new Word({ index, letters: i }));
 				}
-		*/
-		let keys = Object.keys(roundData);
-		for (let numberofLetters of keys) {
-			numberofLetters = numberofLetters;
-			let numberOfWords = roundData[numberofLetters];
-			let indices = [...Array(numberOfWords).keys()];
-			for (let index of indices) {
-				column.add(new Word({ index, letters: numberofLetters }));
 			}
 		}
 	}
 }
 
-const GuessedWordsCol = Column.template($ => ({
+class ThreeColumnBehavior extends Behavior {
+	onCreate(container, data) {
+		this.numberofLetters = data.numberofLetters;
+		container.add(new Column(null, {top: 0}));
+		container.add(new Column(null, {top: 0}));
+		container.add(new Column(null, {top: 0}));
+	}
+	onFill(container, numberOfWords) {
+		let indices = [...Array(numberOfWords).keys()];
+		while (indices.length) {
+			container.first.add(new Word({ index: indices.shift(), letters: this.numberofLetters }));
+			if (indices.length)
+				container.first.next.add(new Word({ index: indices.shift(), letters: this.numberofLetters }));
+			if (indices.length)
+				container.last.add(new Word({ index: indices.shift(), letters: this.numberofLetters }))
+		}
+	}
+}
+
+class TwoColumnBehavior extends Behavior {
+	onCreate(container, data) {
+		this.numberofLetters = data.numberofLetters;
+		container.add(new Column(null, {top: 0}));
+		container.add(new Column(null, {top: 0, right: 0}));
+	}
+	onFill(container, numberOfWords) {
+		let indices = [...Array(numberOfWords).keys()];
+		while (indices.length) {
+			container.first.add(new Word({ index: indices.shift(), letters: this.numberofLetters }));
+			if (indices.length)
+				container.last.add(new Word({ index: indices.shift(), letters: this.numberofLetters }))
+		}
+	}
+}
+
+const GuessedWordsContainer = Column.template($ => ({
 	anchor: "GUESSED_WORDS",
-	left: 0, width: 400, top: 0,
+	left: 0, width: 500, top: 0,
 	Style: ASSETS.SmallStyle,
-	Behavior: GuessedWordsColBehavior
+	Behavior: GuessedWordsContainerBehavior
 }));
 
-export default GuessedWordsCol;
+export default GuessedWordsContainer;
