@@ -15,7 +15,9 @@
 			"$(MODULES)/network/http/*",
 			"./assets",
 			"./guessed-words",
-			"./controls"
+			"./controls",
+			"./scroller",
+			"./home-screen"
 		]
 	},
 	"preload": [

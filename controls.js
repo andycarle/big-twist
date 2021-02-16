@@ -283,27 +283,10 @@ class NewRoundButtonBehavior extends Behavior {
 	}
 }
 
-class ButtonBehavior extends Behavior {
-	onCreate(button, data) {
-		this.action = data.action;
-	}
-	onTouchBegan(button) {
-		application.distribute(this.action);
-	}
-	disable(button) {
-		button.state = 1;
-		button.active = false;
-	}
-	enable(button) {
-		button.state = 0;
-		button.active = true;
-	}
-}
-
 const Button = Label.template($ => ({
-	height: 50, skin: { fill: [ASSETS.LIGHT_COLOR, ASSETS.INACTIVE_COLOR] },
+	height: 50, Skin: ASSETS.ButtonSkin,
 	Style: ASSETS.SmallStyle, state: 1, string: $.string,
-	active: true, Behavior: ButtonBehavior
+	active: true, Behavior: ASSETS.ButtonBehavior
 }));
 
 const ControlsCol = Column.template($ => ({

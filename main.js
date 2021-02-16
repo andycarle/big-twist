@@ -1,13 +1,27 @@
 import Round from "Words";
 import ASSETS from "assets";
+import HomeScreen from "home-screen";
 import LeftCol from "guessed-words";
 import RightCol from "controls";
 
 const GAME_TIME = 180;
+const DEFAULT_LEVEL = 5;
 
 class GameBehavior extends Behavior {
 	onCreate(application, data) {
 		this.data = data;
+    }
+    changeDifficulty(application, level) {
+    	// TO DO
+    	// level is number between 1 and 10, inclusive
+    	this.data.level = level;
+    }
+    onStartGame(application) {
+    	let data = this.data;
+    	application.empty();
+		application.add(new LeftCol(data));
+		application.add(new RightCol(data));
+		this.onRequestNewRound(application);
     }
 	onRequestNewRound(application) {
 		// this.onRoundBegin(application, "testing", {
@@ -51,13 +65,12 @@ const Game = Application.template($ => ({
 	top: 0, bottom: 0, left: 0, right: 0,
     Skin: ASSETS.BackgroundSkin,
 	contents: [
-		new LeftCol($),
-		new RightCol($)
+		new HomeScreen($)
 	],  
 	Behavior: GameBehavior
 }));
 
-export default new Game({}, {
+export default new Game({ level: DEFAULT_LEVEL }, {
 	commandListLength: 50000,
 	displayListLength: 50000 
 });
