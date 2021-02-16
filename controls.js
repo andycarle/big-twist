@@ -240,6 +240,7 @@ class SquaresRowBehavior extends Behavior {
 		this.data["BUTTONS"].last.previous.delegate("enable");		// enable the last button
 	}
 	getLastWord(container) {
+		this.clearLetters(container);
 		this.state = REPLACING;
 
 		let word = this.word = this.lastWord;

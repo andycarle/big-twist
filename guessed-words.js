@@ -1,4 +1,5 @@
 import ASSETS from "assets";
+import {VerticalScrollerBehavior} from "scroller"
 
 const SquareTexture = Texture.template({ path: "square.png" });
 const SquareSkin = Skin.template({
@@ -115,11 +116,17 @@ class TwoColumnBehavior extends Behavior {
 	}
 }
 
-const GuessedWordsContainer = Column.template($ => ({
-	anchor: "GUESSED_WORDS",
-	left: 0, width: 500, top: 0,
-	Style: ASSETS.SmallStyle,
-	Behavior: GuessedWordsContainerBehavior
+const GuessedWordsContainer = Scroller.template($ => ({
+	left: 0, width: 500, top: 0, bottom: 0, 
+	active: true, Behavior: VerticalScrollerBehavior,
+	contents:[
+		Column($, {
+			left: 0, right: 0, top: 0,
+			anchor: "GUESSED_WORDS",
+			Style: ASSETS.SmallStyle,
+			Behavior: GuessedWordsContainerBehavior
+		}),
+	]
 }));
 
 export default GuessedWordsContainer;
